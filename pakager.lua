@@ -22,7 +22,7 @@ if not fs.exists("/.aliases") then
 end
 if not fs.exists("/.repos") then
     local file = fs.open("/.repos","w")
-    file.write("")
+    file.write("url https://raw.githubusercontent.com/cadenthecreator/pakrepo/main/{PAKAGE}.pkg")
     file.close()
 end
 
