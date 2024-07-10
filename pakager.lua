@@ -1,32 +1,5 @@
 shell.setAlias("pakager","/pakager.lua")
 
-local function char_to_hex(c)
-  return string.format("%%%02X", string.byte(c))
-end
-
-local function urlencode(url)
-  if url == nil then
-    return
-  end
-  url = url:gsub("\n", "\r\n")
-  url = url:gsub("([^%w ])", char_to_hex)
-  url = url:gsub(" ", "+")
-  return url
-end
-
-local function hex_to_char(x)
-  return string.char(tonumber(x, 16))
-end
-
-local function urldecode(url)
-  if url == nil then
-    return
-  end
-  url = url:gsub("+", " ")
-  url = url:gsub("%%(%x%x)", hex_to_char)
-  return url
-end
-
 local function split(inputstr, sep)
     if sep == nil then
         sep = "%s"
@@ -205,7 +178,7 @@ elseif operation == "install" then
             until id == tonumber(i.location) or id == nil and (proto == "sendpkg" or proto == "refusal") 
             rednet.close()
         elseif i.type == "url" then
-            local url = i.location:gsub("{PAKAGE}",urlencode(args[1]))
+            local url = i.location:gsub("{PAKAGE}",args[1])
             pak = http.get(url).readAll()
         end
         if pak ~= nil and pak ~= "" then
