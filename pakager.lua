@@ -179,7 +179,8 @@ elseif operation == "install" then
             rednet.close()
         elseif i.type == "url" then
             local url = i.location:gsub("{PAKAGE}",args[1])
-            pak = http.get(url).readAll()
+            req = http.get(url)
+            if req then pak = req.readAll() end
         end
         if pak ~= nil and pak ~= "" then
             install(pak)
