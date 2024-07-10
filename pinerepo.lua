@@ -1,5 +1,5 @@
 peripheral.find("modem",rednet.open)
-if not fs.exist("hostname") then
+if not fs.exists("hostname") then
     local file = fs.open("hostname","w")
     term.write("\nhostname: ")
     file.write(read())
