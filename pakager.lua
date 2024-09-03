@@ -1,5 +1,11 @@
 shell.setAlias("pakager","/pakager.lua")
 
+if not fs.exists("lualzw.lua") then
+    shell.run("wget https://github.com/Rochet2/lualzw/raw/master/lualzw.lua /lualzw.lua")
+end
+
+local lualzw = require("lualzw")
+
 local function split(inputstr, sep)
     if sep == nil then
         sep = "%s"
@@ -71,8 +77,11 @@ local function addAliases(pkaliases,name)
     file.close()
 end
 
-local function install(pak)
-    local pak = textutils.unserialise(pak)
+local function install(paks)
+    local pak = textutils.unserialise(paks)
+    if not pak then
+        pak = textutils.unserialise(lualzw.decompress(paks))
+    end
     local files = pak.files
     local name = pak.name
     print("installing "..name)
@@ -143,7 +152,7 @@ elseif operation == "makepkg" then
     out.name = args[1]
     out.aliases = {}
     local file = fs.open("/"..out.name..".pkg","w")
-    file.write(textutils.serialise(out))
+    file.write(lualzw.compress(textutils.serialise(out)))
     file.close()
     print("wrote to /"..out.name..".pkg")
 elseif operation == "remove" then
