@@ -56,7 +56,7 @@ if not fs.exists("/startup/pakagers.lua") then
 local aliases = textutils.unserialise(file.readAll())
 for pakname,pakaliases in pairs(aliases) do
     for _,alias in ipairs(pakaliases) do
-        shell.setAlias(alias[1],"\"/"..fs.combine("/.pakages/"..pakname,alias[2])..'"')
+        shell.setAlias(alias[1],"/"..fs.combine("/.pakages/"..pakname,alias[2]))
     end
 end
 ]])
