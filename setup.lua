@@ -45,7 +45,7 @@ if netmount then
         local file = fs.open("/startup/-01_mount.lua","w")
         local filedata = http.get(url.."/mount.lua").readAll()
         if mbs then
-            filedata:gsub('shell%.run%("shell"%)','shell.run("/startup/00_mbs.lua")')
+            filedata = filedata:gsub('shell%.run%("shell"%)','shell.run("/startup/00_mbs.lua")')
         end
         file.write(filedata)
         file.close()
