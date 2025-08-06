@@ -1,4 +1,4 @@
-local function installMBS(loc,...)
+local function installMBS(...)
     local arg = {...}
     local root_dir = settings.get("mbs.install_path", ".mbs")
     local rom_dir = "rom/.mbs"
@@ -170,7 +170,7 @@ local function installMBS(loc,...)
       end
     
       -- We'll run at the first possible position to ensure
-      local handle = fs.open(loc, "w")
+      local handle = fs.open("startup/00_mbs.lua", "w")
       local current = shell.getRunningProgram()
       handle.writeLine(("assert(loadfile(%q, _ENV))('startup', %q)"):format(current, current))
       handle.close()
@@ -316,7 +316,7 @@ if netmount then
         local file = fs.open("/startup/-01_mount.lua","w")
         local filedata = http.get(url.."/mount.lua").readAll()
         if mbs then
-            filedata:gsub('shell%.run%("shell"%)','shell.run(".mbs.lua")')
+            filedata:gsub('shell%.run%("shell"%)','shell.run("/startup/00_mbs.lua")')
         end
         file.write(filedata)
         file.close()
@@ -325,9 +325,9 @@ if netmount then
 end
 
 if mbs and not netmount then
-    installMBS("startup/00_mbs.lua","install")
+    installMBS("install")
 elseif mbs and netmount then
-    installMBS(".mbs.lua","install")
+    installMBS("install")
 end
 
 os.reboot()
