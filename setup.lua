@@ -15,6 +15,7 @@ if isYes(read()) then
         term.write("pass: ")
         local pass = read("*")
         if http.checkURL(url) then
+            settings.set("netmount.url",url)
             settings.set("netmount.username",user)
             settings.set("netmount.password",pass)
             settings.set("netmount.path","/cloud")
