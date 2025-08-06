@@ -18,6 +18,7 @@ if isYes(read()) then
             settings.set("netmount.username",user)
             settings.set("netmount.password",pass)
             settings.set("netmount.path","/cloud")
+            settings.save()
             fs.makeDir("/startup")
             local file = fs.open("/startup/-01_mount.lua","w")
             file.write(http.get(url.."/mount.lua").readAll())
