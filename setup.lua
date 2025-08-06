@@ -26,3 +26,5 @@ if isYes(read()) then
             file.close()
         end 
 end
+
+os.reboot()
