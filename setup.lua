@@ -14,7 +14,7 @@ end
 local mbs = false
 local netmount = false
 
-term.write("install mildly better shell? (Y/n)")
+term.write("install MBS? (Y/n)")
 
 if isYes(read()) then
     mbs = true
