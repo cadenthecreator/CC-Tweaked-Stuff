@@ -12,6 +12,16 @@ local function isInDMap(id)
     return false    
 end
 
+local function is_in_table(table,value)
+    if table == nil then return false end
+    for _,v in pairs(table) do
+        if v == value then
+            return true
+        end
+    end
+    return false    
+end
+
 local function queue_message(msg, target)
     table.insert(message_queue,#message_queue+1, {msg,target})
 end
@@ -76,10 +86,11 @@ else
     error("No radio or modem peripheral found")
 end
 disatncemap[os.computerID()] = {dist = 0, sender = os.computerID()}
-interactions.send({protocol="getroutes"})
+queue_message({protocol="getroutes"})
 interactions.send({protocol="route_erase",destination=os.getComputerID()})
-interactions.send({protocol="route",destination=os.getComputerID(),distance=0})
+queue_message({protocol="route",destination=os.getComputerID(),distance=0,visited={os.getComputerID()}})
 
+local function recieve()
 while true do
     local _, msg = interactions.receive()
     if msg.protocol == "route" then
@@ -90,8 +101,10 @@ while true do
             queue_message(msg)
         end
     elseif msg.protocol == "route_erase" then
-        if disatncemap[msg.destination] ~= nil and msg.destination ~= os.getComputerID() then
+        if disatncemap[msg.destination] ~= nil and msg.destination ~= os.getComputerID() and not is_in_table(msg.visited,os.getComputerID()) then
             disatncemap[msg.destination] = nil
+            if (not msg.visited) then msg.visited = {} end
+            msg.visited[#msg.visited+1] = os.getComputerID()
             print("route to",msg.destination,"erased!")
             queue_message(msg)
         end
@@ -128,8 +141,15 @@ while true do
             queue_message({protocol="reroute"})
         end
     end
-    local msg,target = dequeue_message()
-    if msg then
-        interactions.send(msg, target)
+end
+end
+local function send()
+    while true do
+        local msg,target = dequeue_message()
+        if msg then
+            interactions.send(msg, target)
+        end
+        sleep()
     end
 end
+parallel.waitForAny(recieve,send)
