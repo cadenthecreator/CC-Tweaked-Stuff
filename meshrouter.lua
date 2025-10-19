@@ -1,10 +1,10 @@
 local interactions = {}
 local radio = peripheral.find("radio_tower")
 local modem = peripheral.find("modem")
-local disatncemap = {}
+local distancemap = {}
 local message_queue = {}
 local function isInDMap(id)
-    for _,v in pairs(disatncemap) do
+    for _,v in pairs(distancemap) do
         if v.sender == id then
             return true
         end
@@ -85,24 +85,25 @@ elseif modem then
 else
     error("No radio or modem peripheral found")
 end
-disatncemap[os.computerID()] = {dist = 0, sender = os.computerID()}
+distancemap[os.computerID()] = {dist = 0, sender = os.computerID()}
 queue_message({protocol="getroutes"})
 interactions.send({protocol="route_erase",destination=os.getComputerID()})
 queue_message({protocol="route",destination=os.getComputerID(),distance=0,visited={os.getComputerID()}})
+local heartbeat = false
 
 local function recieve()
 while true do
     local _, msg = interactions.receive()
     if msg.protocol == "route" then
-        if msg.distance < (disatncemap[msg.destination] or {dist = math.huge}).dist and msg.destination ~= os.getComputerID() then
-            disatncemap[msg.destination] = {dist = msg.distance, sender = msg._sender}
-            print("route registered to",msg.destination,"via",msg._sender,"just",msg.distance,"hop(s) away!")
+        if msg.distance < (distancemap[msg.destination] or {dist = math.huge}).dist and msg.destination ~= os.getComputerID() then
             msg.distance = msg.distance + 1
+            distancemap[msg.destination] = {dist = msg.distance, sender = msg._sender}
+            print("route registered to",msg.destination,"via",msg._sender,"just",msg.distance,"hop(s) away!")
             queue_message(msg)
         end
     elseif msg.protocol == "route_erase" then
-        if disatncemap[msg.destination] ~= nil and msg.destination ~= os.getComputerID() and not is_in_table(msg.visited,os.getComputerID()) then
-            disatncemap[msg.destination] = nil
+        if distancemap[msg.destination] ~= nil and msg.destination ~= os.getComputerID() and not is_in_table(msg.visited,os.getComputerID()) then
+            distancemap[msg.destination] = nil
             if (not msg.visited) then msg.visited = {} end
             msg.visited[#msg.visited+1] = os.getComputerID()
             print("route to",msg.destination,"erased!")
@@ -112,33 +113,38 @@ while true do
         if msg.destination == os.getComputerID() then
             print("Packet received from",tostring(msg.sender)..":",msg.content)
         else
-            if disatncemap[msg.destination] ~= nil then
+            if distancemap[msg.destination] ~= nil then
                 msg.hops = msg.hops + 1
-                queue_message(msg, disatncemap[msg.destination].sender)
+                queue_message(msg, distancemap[msg.destination].sender)
             else
                 print("No route to",msg.destination)
             end
         end
+    elseif msg.protocol == "heartbeat" then
+        queue_message({protocol="heartbeat_response"}, msg._sender)
+    elseif msg.protocol == "heartbeat_response" then
+        heartbeat = true
     elseif msg.protocol == "getroutes" then
-        local response = {protocol="getroutes_response",routes=disatncemap}
+        local response = {protocol="getroutes_response",routes=distancemap}
         queue_message(response, msg._sender)
     elseif msg.protocol == "getroutes_response" then
         for k,v in pairs(msg.routes) do
-            if v.dist+1 < (disatncemap[k] or {dist = math.huge}).dist and k ~= os.getComputerID() then
+            if v.dist+1 < (distancemap[k] or {dist = math.huge}).dist and k ~= os.getComputerID() then
                 v.sender = msg._sender
                 v.dist = v.dist + 1
-                disatncemap[k] = v
+                distancemap[k] = v
                 print("route registered to",k,"via",v.sender,"just",v.dist,"hop(s) away!")
             end
         end
-    elseif msg.protocol == "heartbeat" then
-        queue_message({protocol="heartbeat_response"}, msg._sender)
     elseif msg.protocol == "reroute" then
-        if isInDMap(msg._sender) then
-            disatncemap = {}
-            disatncemap[os.computerID()] = {dist = 0, sender = os.computerID()}
+        if isInDMap(msg._sender) and not is_in_table(msg.visited,os.getComputerID()) then
+            if (not msg.visited) then msg.visited = {} end
+            msg.visited[#msg.visited+1] = os.getComputerID()
+            print("rerouting")
+            distancemap = {}
+            distancemap[os.computerID()] = {dist = 0, sender = os.computerID()}
             queue_message({protocol="getroutes"})
-            queue_message({protocol="reroute"})
+            queue_message(msg)
         end
     end
 end
@@ -152,4 +158,26 @@ local function send()
         sleep()
     end
 end
-parallel.waitForAny(recieve,send)
+local function heartbeat_f()
+    while true do
+        for k,v in pairs(distancemap) do
+            if k ~= os.getComputerID() then
+                heartbeat = false
+                interactions.send({protocol="heartbeat"}, v.sender)
+                parallel.waitForAny(function()
+                    sleep(5)
+                end, function()
+                    while not heartbeat do
+                        sleep()
+                    end
+                end)
+                if not heartbeat then
+                    distancemap[k] = nil
+                    queue_message({protocol="reroute"})
+                end
+            end
+        end
+        sleep(10)
+    end
+end
+parallel.waitForAny(recieve,send,heartbeat_f)
