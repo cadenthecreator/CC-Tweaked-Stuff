@@ -165,7 +165,7 @@ local function heartbeat_f()
                 heartbeat = false
                 interactions.send({protocol="heartbeat"}, v.sender)
                 parallel.waitForAny(function()
-                    sleep(5)
+                    sleep(0.5)
                 end, function()
                     while not heartbeat do
                         sleep()
