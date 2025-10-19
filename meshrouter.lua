@@ -3,6 +3,15 @@ local radio = peripheral.find("radio_tower")
 local modem = peripheral.find("modem")
 local distancemap = {}
 local message_queue = {}
+
+local function queue_message(msg, target)
+    table.insert(message_queue,#message_queue+1, {msg,target})
+end
+local function dequeue_message()
+    return table.unpack(table.remove(message_queue,1) or {})
+end
+
+
 local function isInDMap(id)
     for _,v in pairs(distancemap) do
         if v.sender == id then
@@ -20,13 +29,6 @@ local function is_in_table(table,value)
         end
     end
     return false    
-end
-
-local function queue_message(msg, target)
-    table.insert(message_queue,#message_queue+1, {msg,target})
-end
-local function dequeue_message()
-    return table.unpack(table.remove(message_queue,1) or {})
 end
 
 if radio and modem then
@@ -113,11 +115,14 @@ while true do
         if msg.destination == os.getComputerID() then
             print("Packet received from",tostring(msg.sender)..":",msg.content)
         else
-            if distancemap[msg.destination] ~= nil then
-                msg.hops = msg.hops + 1
-                queue_message(msg, distancemap[msg.destination].sender)
-            else
-                print("No route to",msg.destination)
+            if msg._target then
+                if distancemap[msg.destination] ~= nil then
+                    print("Forwarding packet to node",msg.destination)
+                    msg.hops = msg.hops + 1
+                    queue_message(msg, distancemap[msg.destination].sender)
+                else
+                    print("No route to",msg.destination)
+                end
             end
         end
     elseif msg.protocol == "heartbeat" then
@@ -129,7 +134,7 @@ while true do
         queue_message(response, msg._sender)
     elseif msg.protocol == "getroutes_response" then
         for k,v in pairs(msg.routes) do
-            if v.dist+1 < (distancemap[k] or {dist = math.huge}).dist and k ~= os.getComputerID() then
+            if v.dist+1 < (distancemap[k] or {dist = math.huge}).dist and k ~= os.getComputerID() and v.sender ~= os.getComputerID() then
                 v.sender = msg._sender
                 v.dist = v.dist + 1
                 distancemap[k] = v
@@ -165,7 +170,7 @@ local function heartbeat_f()
                 heartbeat = false
                 interactions.send({protocol="heartbeat"}, v.sender)
                 parallel.waitForAny(function()
-                    sleep(0.5)
+                    sleep(5)
                 end, function()
                     while not heartbeat do
                         sleep()
