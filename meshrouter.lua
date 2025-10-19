@@ -88,7 +88,7 @@ end
 distancemap[os.computerID()] = {dist = 0, sender = os.computerID()}
 queue_message({protocol="getroutes"})
 interactions.send({protocol="route_erase",destination=os.getComputerID()})
-queue_message({protocol="route",destination=os.getComputerID(),distance=0,visited={os.getComputerID()}})
+queue_message({protocol="route",destination=os.getComputerID(),distance=0})
 local heartbeat = false
 
 local function recieve()
