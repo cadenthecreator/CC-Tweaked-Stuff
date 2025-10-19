@@ -1,6 +1,6 @@
 local interactions = {}
 local radio = peripheral.find("radio_tower")
-local modem = peripheral.find("modem")
+local modem = peripheral.find("modem",function (s) return peripheral.wrap(s).isWireless() end)
 local distancemap = {}
 local clients = {}
 local message_queue = {}
