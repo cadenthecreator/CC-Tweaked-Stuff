@@ -126,7 +126,14 @@ queue_message({protocol="getroutes"})
 interactions.send({protocol="route_erase",destination=os.getComputerID()})
 queue_message({protocol="route",destination=os.getComputerID(),distance=0})
 local heartbeat = false
-
+local function generate_default_routes()
+    local map = {}
+    map[os.computerID()] = {dist = 0, sender = os.computerID()}
+    for client,_ in pairs(clients) do
+        map[client] = {dist = 1, sender = client}
+    end
+    return map
+end
 local function recieve()
 while true do
     local _, msg = interactions.receive()
@@ -188,8 +195,7 @@ while true do
             if (not msg.visited) then msg.visited = {} end
             msg.visited[#msg.visited+1] = os.getComputerID()
             print("rerouting")
-            distancemap = {}
-            distancemap[os.computerID()] = {dist = 0, sender = os.computerID()}
+            distancemap = generate_default_routes()
             queue_message({protocol="getroutes"})
             queue_message(msg)
         end
@@ -219,6 +225,7 @@ local function heartbeat_f()
                     end
                 end)
                 if not heartbeat then
+                    print(k, "timed out")
                     distancemap[k] = nil
                     queue_message({protocol="reroute"})
                 end
