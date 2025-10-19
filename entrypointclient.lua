@@ -1,5 +1,5 @@
 local pullEvent = os.pullEventRaw
-local modem = peripheral.find("modem")
+local modem = peripheral.find("modem",function (s) return peripheral.wrap(s).isWireless() end)
 term.clear()
 term.setCursorPos(1,1)
 _G.network = {}
