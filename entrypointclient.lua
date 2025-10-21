@@ -1,3 +1,5 @@
+local max_distance = 220
+
 local pullEvent = os.pullEventRaw
 local modem = peripheral.find("modem",function (s) return peripheral.wrap(s).isWireless() end)
 term.clear()
@@ -9,7 +11,7 @@ if not modem then
 end
 local message_queue = {}
 modem.open(15125)
-local canidate = {id = -1, distance = 170}
+local canidate = {id = -1, distance = max_distance}
 parallel.waitForAny(function () repeat sleep(0.1) until canidate.id ~= -1 end,
 function ()
     while true do
@@ -34,9 +36,9 @@ local function receive()
             if msg.protocol == "heartbeat" and msg.target == os.getComputerID() and msg.sender == canidate.id then
                 last_heartbeat = os.epoch("utc")
                 modem.transmit(15125,15125,{protocol="heartbeat_response",sender=os.getComputerID(),target=canidate.id})
-                if distance > 170 then
+                if distance > max_distance then
                     modem.transmit(15125,15125,{protocol="entrypoint_disconnect",sender=os.getComputerID(),target=canidate.id})
-                    canidate = {id = -1, distance = 170}
+                    canidate = {id = -1, distance = max_distance}
                     parallel.waitForAny(function () repeat sleep(0.1) until canidate.id ~= -1 end,
                     function ()
                         while true do
@@ -76,7 +78,7 @@ end
 local function connect()
     while true do
         if os.epoch("utc") - last_heartbeat > 200 then
-            canidate = {id = -1, distance = 170}
+            canidate = {id = -1, distance = max_distance}
             parallel.waitForAny(function () repeat sleep(0.1) until canidate.id ~= -1 end,
             function ()
                 while true do
